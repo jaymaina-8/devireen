@@ -17,7 +17,10 @@ export class SettingsRepository {
       }
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.digest === 'DYNAMIC_SERVER_USAGE' || error?.message === 'NEXT_REDIRECT' || error?.message === 'NEXT_NOT_FOUND') {
+        throw error;
+      }
       logger.error('Error fetching settings', error);
       return null;
     }
