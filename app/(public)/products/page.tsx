@@ -15,10 +15,11 @@ export const metadata = {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const q = typeof searchParams.q === 'string' ? searchParams.q : undefined;
-  const category = typeof searchParams.category === 'string' ? searchParams.category : undefined;
+  const params = await searchParams;
+  const q = typeof params.q === 'string' ? params.q : undefined;
+  const category = typeof params.category === 'string' ? params.category : undefined;
   
   const { data: products = [], error } = await fetchProducts({ query: q, categorySlug: category });
   const { data: categoriesData = [] } = await fetchCategories();
