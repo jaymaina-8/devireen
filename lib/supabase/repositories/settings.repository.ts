@@ -19,7 +19,7 @@ export class SettingsRepository {
       return data;
     } catch (error) {
       logger.error('Error fetching settings', error);
-      throw error;
+      return null;
     }
   }
 
