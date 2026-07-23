@@ -136,7 +136,7 @@ export default async function ProductsPage({
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
               {products.map((product: any) => {
                 const primaryImage = product.product_images?.find((i: any) => i.is_primary) || product.product_images?.[0];
                 return (

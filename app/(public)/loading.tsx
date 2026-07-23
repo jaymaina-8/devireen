@@ -17,7 +17,7 @@ export default function Loading() {
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <Skeleton className="h-10 w-64 mb-8" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
               <Skeleton key={i} className="h-24 w-full rounded-xl" />
             ))}

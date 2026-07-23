@@ -496,7 +496,7 @@ export default async function HomePage() {
             </div>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
             {whyCards.map((card, i) => (
               <AnimatedSection key={card.title} animation="fade-up" delay={i * 80}>
                 <div className="flex flex-col bg-background border border-border-subtle rounded-xl p-6 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary-200">
