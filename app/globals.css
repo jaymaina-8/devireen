@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+
+@theme {
+  /* ─── Enterprise Red Brand Palette ─── */
+  --color-primary-50: hsl(0 86% 97%); /* #FEF2F2 */
+  --color-primary-100: hsl(0 93% 94%); /* #FEE2E2 */
+  --color-primary-200: hsl(0 96% 89%); /* #FECACA */
+  --color-primary-500: hsl(0 72% 51%); /* #DC2626 */
+  --color-primary-600: hsl(0 72% 51%); /* #DC2626 */
+  --color-primary-700: hsl(0 74% 42%); /* #B91C1C */
+  --color-primary: hsl(0 72% 51%); /* #DC2626 */
+
+  --color-background: hsl(0 0% 98%);
+  --color-surface: hsl(0 0% 100%);
+
+  --color-border-subtle: hsl(0 0% 90%);
+  --color-border-strong: hsl(0 0% 80%);
+
+  --color-text-main: hsl(0 0% 10%);
+  --color-text-body: hsl(0 0% 22%);
+  --color-text-muted: hsl(0 0% 47%);
+
+  --color-success: hsl(142 71% 45%);
+  --color-warning: hsl(38 92% 50%);
+  --color-error: hsl(348 83% 47%);
+  --color-info: hsl(204 98% 39%);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Animation tokens */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  --animate-fade-in-up: fade-in-up 0.6s var(--ease-out-expo) both;
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-scale-in: scale-in 0.4s var(--ease-out-expo) both;
+  --animate-slide-in-right: slide-in-right 0.5s var(--ease-out-expo) both;
+  --animate-slide-in-left: slide-in-left 0.5s var(--ease-out-expo) both;
+  --animate-logo-scroll: logo-scroll 30s linear infinite;
+}
+
+/* ─── Animation Keyframes ─── */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes logo-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes counter-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* ─── Accessibility: Reduced Motion ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Reveal-on-Scroll Utility ─── */
+
+.reveal-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Image Hover Zoom ─── */
+
+.img-zoom {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .img-zoom,
+.img-zoom-trigger:hover .img-zoom {
+  transform: scale(1.08);
+}
+
+/* ─── Gradient Backgrounds ─── */
+
+.bg-hero-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(0 86% 97%) 0%,
+    hsl(0 0% 98%) 50%,
+    hsl(0 93% 94%) 100%
+  );
+}
+
+.bg-dark-overlay {
+  background: linear-gradient(
+    to right,
+    rgba(15, 23, 42, 0.85),
+    rgba(15, 23, 42, 0.6)
+  );
+}
+
+.bg-dark-overlay-strong {
+  background: linear-gradient(
+    to right,
+    rgba(15, 23, 42, 0.92),
+    rgba(15, 23, 42, 0.75)
+  );
+}
+
+.bg-card-gradient {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(15, 23, 42, 0.7) 100%
+  );
+}
+
+/* ─── Stagger Children Animations ─── */
+
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 80ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 160ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 240ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 320ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 400ms;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 480ms;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 560ms;
+}
+
+/* ─── Skeleton Loading ─── */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(0 0% 90%) 25%,
+    hsl(0 0% 95%) 50%,
+    hsl(0 0% 90%) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+/* ─── Smooth Link Underline ─── */
+
+.nav-link-underline {
+  position: relative;
+}
+
+.nav-link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-primary);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link-underline:hover::after,
+.nav-link-underline[data-active='true']::after {
+  width: 100%;
+}
+
+/* ─── Dark Section ─── */
+
+.section-dark {
+  background-color: hsl(0 0% 8%);
+  color: hsl(0 0% 88%);
+}
+
+.section-dark h2,
+.section-dark h3,
+.section-dark h4 {
+  color: hsl(0 0% 100%);
+}
