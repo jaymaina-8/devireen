@@ -31,26 +31,38 @@ async function getQuoteById(id: string) {
 }
 
 function getStatusColor(status: string) {
-  switch(status) {
-    case 'DRAFT': return 'default';
-    case 'PENDING': return 'warning';
-    case 'REVIEWING': return 'info';
-    case 'APPROVED': return 'success';
-    case 'REJECTED': return 'error';
-    case 'FULFILLED': return 'success';
-    default: return 'default';
+  switch (status) {
+    case 'DRAFT':
+      return 'default';
+    case 'PENDING':
+      return 'warning';
+    case 'REVIEWING':
+      return 'info';
+    case 'APPROVED':
+      return 'success';
+    case 'REJECTED':
+      return 'error';
+    case 'FULFILLED':
+      return 'success';
+    default:
+      return 'default';
   }
 }
 
-export default async function QuoteDetailsPage({ params }: { params: { id: string } }) {
-  const quote = await getQuoteById(params.id);
-  
+export default async function QuoteDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const quote = await getQuoteById(id);
+
   if (!quote) {
     notFound();
   }
 
   const supabase = await createClient();
-  
+
   // Fetch available customers
   const { data: customers } = await supabase
     .from('customers')
@@ -70,29 +82,39 @@ export default async function QuoteDetailsPage({ params }: { params: { id: strin
       <div className="flex items-center gap-4">
         <Link href="/dashboard/quotes">
           <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">Quote #{quote.id.substring(0, 8).toUpperCase()}</h1>
-            <Badge variant={getStatusColor(quote.status) as any}>{quote.status}</Badge>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Quote #{quote.id.substring(0, 8).toUpperCase()}
+            </h1>
+            <Badge variant={getStatusColor(quote.status) as any}>
+              {quote.status}
+            </Badge>
           </div>
-          <p className="text-gray-500">Requested on {format(new Date(quote.created_at), 'MMMM d, yyyy h:mm a')}</p>
+          <p className="text-gray-500">
+            Requested on{' '}
+            {format(new Date(quote.created_at), 'MMMM d, yyyy h:mm a')}
+          </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-           <ConvertQuoteToOrderButton quoteId={quote.id} currentStatus={quote.status} />
-           <Button variant="outline">
-             <Download className="w-4 h-4 mr-2" />
-             Export PDF
-           </Button>
+          <ConvertQuoteToOrderButton
+            quoteId={quote.id}
+            currentStatus={quote.status}
+          />
+          <Button variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
         </div>
       </div>
 
-      <QuoteForm 
-        initialData={quote} 
-        customers={customers || []} 
-        products={products || []} 
+      <QuoteForm
+        initialData={quote}
+        customers={customers || []}
+        products={products || []}
       />
     </div>
   );

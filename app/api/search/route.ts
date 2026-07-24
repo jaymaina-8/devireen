@@ -11,76 +11,167 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
   const searchPattern = `%${query}%`;
-  const results = [];
+  const results: any[] = [];
 
+  // 1. Search Products
   try {
-    // Search Products
     const { data: products } = await supabase
       .from('products')
-      .select('id, name, sku')
-      .ilike('name', searchPattern)
-      .limit(5);
+      .select('id, name, sku, price')
+      .is('deleted_at', null)
+      .or(`name.ilike.${searchPattern},sku.ilike.${searchPattern}`)
+      .limit(4);
 
     if (products) {
-      results.push(...products.map(p => ({
-        type: 'product',
-        title: p.name,
-        subtitle: `SKU: ${p.sku}`,
-        url: `/dashboard/products/${p.id}/edit`
-      })));
+      results.push(
+        ...products.map((p) => ({
+          type: 'product',
+          title: p.name,
+          subtitle: `SKU: ${p.sku} • KSh ${p.price?.toLocaleString() || 0}`,
+          url: `/dashboard/products/${p.id}/edit`,
+        }))
+      );
     }
+  } catch (e) {}
 
-    // Search Customers
+  // 2. Search Categories
+  try {
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('id, name, slug')
+      .is('deleted_at', null)
+      .ilike('name', searchPattern)
+      .limit(4);
+
+    if (categories) {
+      results.push(
+        ...categories.map((c) => ({
+          type: 'category',
+          title: c.name,
+          subtitle: `Slug: /${c.slug}`,
+          url: `/dashboard/categories`,
+        }))
+      );
+    }
+  } catch (e) {}
+
+  // 3. Search Customers
+  try {
     const { data: customers } = await supabase
       .from('customers')
-      .select('id, first_name, last_name, email, phone_number')
-      .or(`first_name.ilike.${searchPattern},last_name.ilike.${searchPattern},email.ilike.${searchPattern}`)
-      .limit(5);
+      .select('id, company_name, contact_email, contact_phone')
+      .is('deleted_at', null)
+      .or(
+        `company_name.ilike.${searchPattern},contact_email.ilike.${searchPattern},contact_phone.ilike.${searchPattern}`
+      )
+      .limit(4);
 
     if (customers) {
-      results.push(...customers.map(c => ({
-        type: 'customer',
-        title: `${c.first_name || ''} ${c.last_name || ''}`.trim(),
-        subtitle: c.email || c.phone_number || 'No contact info',
-        url: `/dashboard/customers/${c.id}`
-      })));
+      results.push(
+        ...customers.map((c) => ({
+          type: 'customer',
+          title: c.company_name || 'Individual Customer',
+          subtitle: c.contact_email || c.contact_phone || 'No email',
+          url: `/dashboard/customers`,
+        }))
+      );
     }
+  } catch (e) {}
 
-    // Search Quotes (by quote_number)
+  // 4. Search Quotes
+  try {
     const { data: quotes } = await supabase
       .from('quotes')
-      .select('id, quote_number, status')
-      .ilike('quote_number', searchPattern)
-      .limit(5);
+      .select('id, quote_number, status, total_amount')
+      .is('deleted_at', null)
+      .or(`quote_number.ilike.${searchPattern},id.ilike.${searchPattern}`)
+      .limit(4);
 
     if (quotes) {
-      results.push(...quotes.map(q => ({
-        type: 'quote',
-        title: q.quote_number,
-        subtitle: `Status: ${q.status}`,
-        url: `/dashboard/quotes/${q.id}`
-      })));
+      results.push(
+        ...quotes.map((q) => ({
+          type: 'quote',
+          title: `Quote #${q.quote_number || q.id.slice(0, 8)}`,
+          subtitle: `Status: ${q.status} • KSh ${q.total_amount?.toLocaleString() || 0}`,
+          url: `/dashboard/quotes`,
+        }))
+      );
     }
+  } catch (e) {}
 
-    // Search Orders (by order_number)
+  // 5. Search Orders
+  try {
     const { data: orders } = await supabase
       .from('orders')
-      .select('id, order_number, status')
-      .ilike('order_number', searchPattern)
-      .limit(5);
+      .select('id, order_number, status, total_amount')
+      .is('deleted_at', null)
+      .or(`order_number.ilike.${searchPattern},id.ilike.${searchPattern}`)
+      .limit(4);
 
     if (orders) {
-      results.push(...orders.map(o => ({
-        type: 'order',
-        title: o.order_number,
-        subtitle: `Status: ${o.status}`,
-        url: `/dashboard/orders/${o.id}`
-      })));
+      results.push(
+        ...orders.map((o) => ({
+          type: 'order',
+          title: `Order #${o.order_number || o.id.slice(0, 8)}`,
+          subtitle: `Status: ${o.status} • KSh ${o.total_amount?.toLocaleString() || 0}`,
+          url: `/dashboard/orders`,
+        }))
+      );
     }
+  } catch (e) {}
 
-    return NextResponse.json({ results });
-  } catch (error) {
-    console.error('Search error:', error);
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
-  }
+  // 6. Search Testimonials
+  try {
+    const { data: testimonials } = await supabase
+      .from('testimonials')
+      .select('id, customer_name, company')
+      .is('deleted_at', null)
+      .or(`customer_name.ilike.${searchPattern},company.ilike.${searchPattern}`)
+      .limit(4);
+
+    if (testimonials) {
+      results.push(
+        ...testimonials.map((t) => ({
+          type: 'testimonial',
+          title: t.customer_name,
+          subtitle: t.company ? `Company: ${t.company}` : 'Review',
+          url: `/dashboard/testimonials`,
+        }))
+      );
+    }
+  } catch (e) {}
+
+  // 7. Settings keywords search
+  try {
+    const settingsPages = [
+      {
+        name: 'Company Profile & Contact',
+        keywords: ['company', 'phone', 'email', 'address', 'whatsapp'],
+        url: '/dashboard/settings#profile',
+      },
+      {
+        name: 'Tax & KRA PIN Settings',
+        keywords: ['tax', 'kra', 'vat', 'pin', 'invoice'],
+        url: '/dashboard/settings#tax',
+      },
+      {
+        name: 'Business Hours',
+        keywords: ['hours', 'weekdays', 'weekends', 'opening', 'time'],
+        url: '/dashboard/settings#hours',
+      },
+    ];
+
+    settingsPages.forEach((s) => {
+      if (s.keywords.some((k) => k.includes(query.toLowerCase()))) {
+        results.push({
+          type: 'settings',
+          title: s.name,
+          subtitle: 'Enterprise Settings',
+          url: s.url,
+        });
+      }
+    });
+  } catch (e) {}
+
+  return NextResponse.json({ results });
 }

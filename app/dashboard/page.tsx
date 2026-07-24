@@ -1,84 +1,226 @@
 import { createClient } from '@/lib/supabase/server';
 import { DashboardCard } from '@/components/dashboard/DashboardCard';
-import { Package, Users, FileText, Settings, Tags, DollarSign, Activity, AlertCircle, Plus, ShoppingCart, Star, Database, CheckCircle2 } from 'lucide-react';
+import {
+  Package,
+  Users,
+  FileText,
+  Settings,
+  Tags,
+  DollarSign,
+  Activity,
+  AlertTriangle,
+  Plus,
+  ShoppingCart,
+  Star,
+  Database,
+  CheckCircle2,
+  ArrowUpRight,
+  TrendingUp,
+  Clock,
+  ShieldCheck,
+  Sparkles,
+  ChevronRight,
+  FileQuestion,
+  ImageOff,
+} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { format, startOfDay } from 'date-fns';
 
 export const metadata = {
-  title: 'Dashboard Overview | Devireen Enterprise',
+  title: 'Operations Center | Devireen Enterprise OS',
 };
 
 async function getDashboardData() {
   const supabase = await createClient();
   const today = startOfDay(new Date()).toISOString();
 
-  // Fetch counts
+  const safeQuery = async (queryFn: () => PromiseLike<any>, fallback: any) => {
+    try {
+      const res = await queryFn();
+      if (!res || res.error) return fallback;
+      return res;
+    } catch {
+      return fallback;
+    }
+  };
+
+  // Parallel data queries with safe fallbacks
   const [
-    { count: productsCount },
-    { count: categoriesCount },
-    { count: customersCount },
-    { count: testimonialsCount },
-    { count: todayQuotesCount },
-    { count: pendingQuotesCount },
-    // Mock orders count since we don't have orders table yet, or if we do
-    // actually, let's just query quotes as we did before, and we will build an orders table.
+    productsRes,
+    categoriesRes,
+    customersRes,
+    testimonialsRes,
+    todayQuotesRes,
+    pendingQuotesRes,
+    ordersRes,
+    recentOrdersRes,
+    recentQuotesRes,
+    recentCustomersRes,
+    recentActivityRes,
+    productsMissingImagesRes,
+    productsMissingPricesRes,
+    productsMissingDescriptionsRes,
   ] = await Promise.all([
-    supabase.from('products').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-    supabase.from('categories').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-    supabase.from('customers').select('*', { count: 'exact', head: true }),
-    supabase.from('testimonials').select('*', { count: 'exact', head: true }),
-    supabase.from('quotes').select('*', { count: 'exact', head: true }).gte('created_at', today),
-    supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+    safeQuery(
+      () =>
+        supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('categories')
+          .select('*', { count: 'exact', head: true })
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('customers')
+          .select('*', { count: 'exact', head: true })
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('testimonials')
+          .select('*', { count: 'exact', head: true })
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('quotes')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', today)
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('quotes')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'PENDING')
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .is('deleted_at', null),
+      { count: 0 }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('orders')
+          .select('*, customers(company_name, contact_email)')
+          .order('created_at', { ascending: false })
+          .limit(5),
+      { data: [] }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('quotes')
+          .select('*, customers(company_name)')
+          .order('created_at', { ascending: false })
+          .limit(5),
+      { data: [] }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('customers')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      { data: [] }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('activity_logs')
+          .select('*, profiles:user_id(full_name, email)')
+          .order('created_at', { ascending: false })
+          .limit(8),
+      { data: [] }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('products')
+          .select('id, name, sku')
+          .is('deleted_at', null)
+          .is('product_images', null)
+          .limit(5),
+      { data: [] }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('products')
+          .select('id, name, sku')
+          .is('deleted_at', null)
+          .or('price.eq.0,price.is.null')
+          .limit(5),
+      { data: [] }
+    ),
+    safeQuery(
+      () =>
+        supabase
+          .from('products')
+          .select('id, name, sku')
+          .is('deleted_at', null)
+          .is('description', null)
+          .limit(5),
+      { data: [] }
+    ),
   ]);
 
-  // Fetch recent activity
-  const { data: recentActivity } = await supabase
-    .from('activity_logs')
-    .select('*, profiles:user_id(full_name, email)')
-    .order('created_at', { ascending: false })
-    .limit(10);
+  // Total estimated volume calculated from quotes
+  let totalVolume = 0;
+  try {
+    const { data: totalVolumeData } = await supabase
+      .from('quotes')
+      .select('total_amount')
+      .is('deleted_at', null);
 
-  const { data: productsMissingImages } = await supabase
-    .from('products')
-    .select('id, name')
-    .is('images', null)
-    .limit(5);
-
-  const { data: productsMissingPrices } = await supabase
-    .from('products')
-    .select('id, name')
-    .is('price', null)
-    .limit(5);
-
-  const { data: productsMissingDescriptions } = await supabase
-    .from('products')
-    .select('id, name')
-    .is('description', null)
-    .limit(5);
-
-  // System Status
-  const systemStatus = {
-    database: true,
-    auth: true,
-    storage: true,
-  };
+    totalVolume = (totalVolumeData || []).reduce(
+      (sum, item) => sum + Number(item.total_amount || 0),
+      0
+    );
+  } catch {}
 
   return {
     stats: {
-      products: productsCount || 0,
-      categories: categoriesCount || 0,
-      customers: customersCount || 0,
-      testimonials: testimonialsCount || 0,
-      todayQuotes: todayQuotesCount || 0,
-      pendingQuotes: pendingQuotesCount || 0,
-      orders: 0, // Placeholder until orders feature is built
+      products: productsRes.count || 0,
+      categories: categoriesRes.count || 0,
+      customers: customersRes.count || 0,
+      testimonials: testimonialsRes.count || 0,
+      todayQuotes: todayQuotesRes.count || 0,
+      pendingQuotes: pendingQuotesRes.count || 0,
+      orders: ordersRes.count || 0,
+      totalVolume,
     },
-    recentActivity: recentActivity || [],
-    productsMissingImages: productsMissingImages || [],
-    productsMissingPrices: productsMissingPrices || [],
-    productsMissingDescriptions: productsMissingDescriptions || [],
-    systemStatus,
+    recentOrders: recentOrdersRes.data || [],
+    recentQuotes: recentQuotesRes.data || [],
+    recentCustomers: recentCustomersRes.data || [],
+    recentActivity: recentActivityRes.data || [],
+    productsMissingImages: productsMissingImagesRes.data || [],
+    productsMissingPrices: productsMissingPricesRes.data || [],
+    productsMissingDescriptions: productsMissingDescriptionsRes.data || [],
   };
 }
 
@@ -86,110 +228,271 @@ export default async function DashboardOverview() {
   const data = await getDashboardData();
 
   const getActivityIcon = (type: string, action: string) => {
-    if (action === 'deleted' || action === 'blocked') return <AlertCircle className="w-4 h-4 text-red-500" />;
-    if (type === 'product') return <Package className="w-4 h-4 text-indigo-500" />;
-    if (type === 'quote') return <FileText className="w-4 h-4 text-blue-500" />;
-    if (type === 'order') return <ShoppingCart className="w-4 h-4 text-green-500" />;
-    if (type === 'customer') return <Users className="w-4 h-4 text-purple-500" />;
-    return <Activity className="w-4 h-4 text-gray-500" />;
+    if (action === 'deleted' || action === 'blocked')
+      return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    if (type === 'product')
+      return <Package className="h-4 w-4 text-blue-500" />;
+    if (type === 'quote')
+      return <FileText className="h-4 w-4 text-indigo-500" />;
+    if (type === 'order')
+      return <ShoppingCart className="h-4 w-4 text-emerald-500" />;
+    if (type === 'customer')
+      return <Users className="h-4 w-4 text-purple-500" />;
+    return <Activity className="h-4 w-4 text-slate-400" />;
   };
 
-  const getActivityMessage = (log: any) => {
-    const user = log.profiles?.full_name || 'System';
-    switch (log.action) {
-      case 'created': return `${user} created a new ${log.entity_type}`;
-      case 'updated': return `${user} updated a ${log.entity_type}`;
-      case 'deleted': return `${user} deleted a ${log.entity_type}`;
-      case 'blocked': return `${user} blocked a ${log.entity_type}`;
-      case 'approved': return `${user} approved a ${log.entity_type}`;
-      case 'rejected': return `${user} rejected a ${log.entity_type}`;
-      case 'fulfilled': return `${user} fulfilled a ${log.entity_type}`;
-      default: return `${user} performed ${log.action} on ${log.entity_type}`;
-    }
-  };
+  const totalActionAlerts =
+    data.productsMissingImages.length +
+    data.productsMissingPrices.length +
+    data.productsMissingDescriptions.length;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Operations Center</h1>
-        <p className="text-gray-500 mt-1">Monitor activity, pending items, and manage your business.</p>
+      {/* Header Banner */}
+      <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl md:flex-row md:items-center md:p-8">
+        <div className="relative z-10 space-y-1">
+          <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-blue-400 uppercase">
+            <Sparkles className="h-4 w-4 text-blue-400" /> Executive Overview
+          </div>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+            Enterprise Operations Center
+          </h1>
+          <p className="max-w-xl text-xs text-slate-400 sm:text-sm">
+            Real-time control dashboard for quotes, product catalog, customer
+            intelligence, and order fulfillment.
+          </p>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-3">
+          <Link href="/dashboard/quotes/new">
+            <Button className="rounded-xl border-0 bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md hover:bg-blue-500">
+              <Plus className="mr-1.5 h-4 w-4" /> Create Quote
+            </Button>
+          </Link>
+          <Link href="/dashboard/products/new">
+            <Button
+              variant="outline"
+              className="rounded-xl border-white/20 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/20"
+            >
+              <Package className="mr-1.5 h-4 w-4" /> Add Product
+            </Button>
+          </Link>
+        </div>
+
+        {/* Ambient background glow */}
+        <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-96 bg-blue-500/10 blur-3xl" />
       </div>
 
-      {/* Primary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard title="Today's Quotes" value={data.stats.todayQuotes.toString()} icon={<FileText className="w-5 h-5 text-blue-600" />} />
-        <DashboardCard title="Pending Quotes" value={data.stats.pendingQuotes.toString()} icon={<AlertCircle className="w-5 h-5 text-orange-600" />} />
-        <DashboardCard title="Orders" value={data.stats.orders.toString()} icon={<ShoppingCart className="w-5 h-5 text-green-600" />} />
-        <DashboardCard title="Total Products" value={data.stats.products.toString()} icon={<Package className="w-5 h-5 text-indigo-600" />} />
+      {/* Metric Cards Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              Today&apos;s Quotes
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <FileText className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-3xl font-bold text-slate-900">
+              {data.stats.todayQuotes}
+            </span>
+            <div className="mt-1 flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <TrendingUp className="h-3.5 w-3.5" /> Active RFQ Flow
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              Pending RFQs
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <Clock className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-3xl font-bold text-slate-900">
+              {data.stats.pendingQuotes}
+            </span>
+            <div className="mt-1 text-xs text-slate-500">Requires review</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              Active Orders
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <ShoppingCart className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-3xl font-bold text-slate-900">
+              {data.stats.orders}
+            </span>
+            <div className="mt-1 flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Pipeline Active
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              Est. Pipeline Value
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+              <DollarSign className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="block truncate text-2xl font-bold text-slate-900">
+              KSh {data.stats.totalVolume.toLocaleString()}
+            </span>
+            <div className="mt-1 text-xs text-slate-500">Across all quotes</div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
-        {/* Left Column (2/3) */}
-        <div className="xl:col-span-2 space-y-8">
-          
-          {/* Quick Actions */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-5 flex items-center"><Plus className="w-5 h-5 mr-2 text-gray-400" /> Quick Actions</h2>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/dashboard/products/new"><Button className="rounded-full px-6"><Plus className="w-4 h-4 mr-2" /> Add Product</Button></Link>
-              <Link href="/dashboard/quotes/new"><Button variant="secondary" className="rounded-full px-6 bg-gray-100 text-gray-900 hover:bg-gray-200"><FileText className="w-4 h-4 mr-2" /> New Quote</Button></Link>
-              <Link href="/dashboard/customers/new"><Button variant="secondary" className="rounded-full px-6 bg-gray-100 text-gray-900 hover:bg-gray-200"><Users className="w-4 h-4 mr-2" /> Add Customer</Button></Link>
-              <Link href="/dashboard/settings"><Button variant="secondary" className="rounded-full px-6 bg-gray-100 text-gray-900 hover:bg-gray-200"><Settings className="w-4 h-4 mr-2" /> Edit Settings</Button></Link>
+      {/* Main 2-Column Section */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Left 2 Columns */}
+        <div className="space-y-8 lg:col-span-2">
+          {/* Recent Quotes Workspace */}
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <FileText className="h-4 w-4 text-blue-600" /> Recent Quotation
+                Requests
+              </h2>
+              <Link
+                href="/dashboard/quotes"
+                className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+              >
+                View All Quotes <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="divide-y divide-slate-100 text-xs">
+              {data.recentQuotes.length > 0 ? (
+                data.recentQuotes.map((quote: any) => (
+                  <div
+                    key={quote.id}
+                    className="flex items-center justify-between p-4 px-6 transition-colors hover:bg-slate-50/80"
+                  >
+                    <div>
+                      <span className="block font-bold text-slate-900">
+                        Quote #{quote.quote_number || quote.id.slice(0, 8)}
+                      </span>
+                      <span className="text-slate-500">
+                        {quote.customers?.company_name || 'Direct Customer'}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block font-semibold text-slate-900">
+                        KSh {quote.total_amount?.toLocaleString() || 0}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                          quote.status === 'PENDING'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        {quote.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-xs text-slate-400">
+                  No quote requests submitted yet.
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Recent Activity Feed */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center"><Activity className="w-5 h-5 mr-2 text-gray-400" /> Recent Activity</h2>
+          {/* Activity Stream Timeline */}
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <Activity className="h-4 w-4 text-indigo-600" /> Live System
+                Audit Trail
+              </h2>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                Real-time
+              </span>
             </div>
-            <div className="divide-y divide-gray-100">
+
+            <div className="divide-y divide-slate-100 text-xs">
               {data.recentActivity.map((log: any) => (
-                <div key={log.id} className="p-5 px-6 flex items-start gap-4 hover:bg-gray-50/50 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div
+                  key={log.id}
+                  className="flex items-center gap-3 p-4 px-6 transition-colors hover:bg-slate-50/60"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
                     {getActivityIcon(log.entity_type, log.action)}
                   </div>
-                  <div>
-                    <div className="font-medium text-gray-900">{getActivityMessage(log)}</div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center">
-                      <span className="capitalize">{log.entity_type}</span>
-                      <span className="mx-2">•</span>
-                      {format(new Date(log.created_at), 'MMM d, h:mm a')}
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-slate-900">
+                      <span className="font-semibold">
+                        {log.profiles?.full_name || 'Admin User'}
+                      </span>{' '}
+                      {log.action} a {log.entity_type}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {format(new Date(log.created_at), 'MMM d, yyyy • h:mm a')}
+                    </p>
                   </div>
                 </div>
               ))}
               {data.recentActivity.length === 0 && (
-                <div className="p-8 text-center text-gray-500">
-                  No recent activity found. Once actions are taken, they will appear here.
+                <div className="p-8 text-center text-xs text-slate-400">
+                  No activity logged yet.
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right Column (1/3) */}
+        {/* Right 1 Column */}
         <div className="space-y-8">
-          
-          {/* Action Required Alerts */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="text-lg font-semibold text-gray-900">Action Required</h2>
+          {/* Action Required Inventory & Catalog Alerts */}
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-amber-50/50 px-6 py-4">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                <AlertTriangle className="h-4 w-4 text-amber-600" /> Action
+                Required Alerts
+              </h2>
+              {totalActionAlerts > 0 && (
+                <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                  {totalActionAlerts}
+                </span>
+              )}
             </div>
-            <div className="divide-y divide-gray-100">
-              
+
+            <div className="space-y-4 p-5 text-xs">
               {data.productsMissingImages.length > 0 && (
-                <div className="p-5 bg-orange-50/50">
-                  <div className="flex items-center text-orange-800 mb-3">
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    <h3 className="text-sm font-semibold">Missing Images</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                    <ImageOff className="h-3.5 w-3.5 text-amber-600" /> Missing
+                    Product Images ({data.productsMissingImages.length})
                   </div>
-                  <div className="space-y-2">
-                    {data.productsMissingImages.map((product: any) => (
-                      <Link key={product.id} href={`/dashboard/products/${product.id}`} className="flex justify-between items-center text-sm hover:text-blue-600 transition-colors">
-                        <span className="text-gray-700 truncate mr-2">{product.name}</span>
-                        <span className="text-blue-600 flex-shrink-0 text-xs font-medium">Fix &rarr;</span>
+                  <div className="space-y-1">
+                    {data.productsMissingImages.map((p: any) => (
+                      <Link
+                        key={p.id}
+                        href={`/dashboard/products/${p.id}/edit`}
+                        className="flex items-center justify-between rounded p-1.5 text-slate-600 transition-colors hover:bg-slate-50 hover:text-blue-600"
+                      >
+                        <span className="truncate">{p.name}</span>
+                        <span className="shrink-0 font-semibold text-blue-600">
+                          Fix &rarr;
+                        </span>
                       </Link>
                     ))}
                   </div>
@@ -197,67 +500,85 @@ export default async function DashboardOverview() {
               )}
 
               {data.productsMissingPrices.length > 0 && (
-                <div className="p-5 bg-orange-50/50">
-                  <div className="flex items-center text-orange-800 mb-3">
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    <h3 className="text-sm font-semibold">Missing Prices</h3>
+                <div className="space-y-2 border-t border-slate-100 pt-2">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                    <FileQuestion className="h-3.5 w-3.5 text-amber-600" />{' '}
+                    Missing Price Configuration (
+                    {data.productsMissingPrices.length})
                   </div>
-                  <div className="space-y-2">
-                    {data.productsMissingPrices.map((product: any) => (
-                      <Link key={product.id} href={`/dashboard/products/${product.id}`} className="flex justify-between items-center text-sm hover:text-blue-600 transition-colors">
-                        <span className="text-gray-700 truncate mr-2">{product.name}</span>
-                        <span className="text-blue-600 flex-shrink-0 text-xs font-medium">Fix &rarr;</span>
+                  <div className="space-y-1">
+                    {data.productsMissingPrices.map((p: any) => (
+                      <Link
+                        key={p.id}
+                        href={`/dashboard/products/${p.id}/edit`}
+                        className="flex items-center justify-between rounded p-1.5 text-slate-600 transition-colors hover:bg-slate-50 hover:text-blue-600"
+                      >
+                        <span className="truncate">{p.name}</span>
+                        <span className="shrink-0 font-semibold text-blue-600">
+                          Fix &rarr;
+                        </span>
                       </Link>
                     ))}
                   </div>
                 </div>
               )}
 
-              {data.productsMissingDescriptions.length > 0 && (
-                <div className="p-5 bg-orange-50/50">
-                  <div className="flex items-center text-orange-800 mb-3">
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    <h3 className="text-sm font-semibold">Missing Descriptions</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {data.productsMissingDescriptions.map((product: any) => (
-                      <Link key={product.id} href={`/dashboard/products/${product.id}`} className="flex justify-between items-center text-sm hover:text-blue-600 transition-colors">
-                        <span className="text-gray-700 truncate mr-2">{product.name}</span>
-                        <span className="text-blue-600 flex-shrink-0 text-xs font-medium">Fix &rarr;</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {data.productsMissingImages.length === 0 && data.productsMissingPrices.length === 0 && data.productsMissingDescriptions.length === 0 && (
-                <div className="p-6 text-center text-gray-500 flex flex-col items-center">
-                  <CheckCircle2 className="w-8 h-8 text-green-500 mb-2" />
-                  <p className="text-sm">All products are fully configured!</p>
+              {totalActionAlerts === 0 && (
+                <div className="space-y-2 py-6 text-center text-slate-500">
+                  <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+                  <p className="font-semibold text-slate-800">
+                    All catalog items fully configured!
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Zero missing images, prices, or descriptions.
+                  </p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* System Status */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-5 flex items-center"><Database className="w-5 h-5 mr-2 text-gray-400" /> System Status</h2>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 font-medium">Database</span>
-                <span className="flex items-center text-green-700 font-semibold bg-green-50 px-2.5 py-1 rounded-full"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></div> Online</span>
+          {/* System Status Center */}
+          <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xs">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" /> Enterprise
+              Health Status
+            </h2>
+
+            <div className="space-y-3 text-xs font-medium">
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                <span className="flex items-center gap-2 text-slate-700">
+                  <Database className="h-4 w-4 text-slate-400" /> Supabase
+                  Database
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />{' '}
+                  Operational
+                </span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 font-medium">Authentication</span>
-                <span className="flex items-center text-green-700 font-semibold bg-green-50 px-2.5 py-1 rounded-full"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></div> Active</span>
+
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                <span className="flex items-center gap-2 text-slate-700">
+                  <ShieldCheck className="h-4 w-4 text-slate-400" /> Auth &
+                  Security RLS
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />{' '}
+                  Enforced
+                </span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 font-medium">Storage Buckets</span>
-                <span className="flex items-center text-green-700 font-semibold bg-green-50 px-2.5 py-1 rounded-full"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></div> Online</span>
+
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                <span className="flex items-center gap-2 text-slate-700">
+                  <Package className="h-4 w-4 text-slate-400" /> Media Storage
+                  Bucket
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />{' '}
+                  Active
+                </span>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -1,22 +1,30 @@
-import { fetchProductBySlug } from '@/actions/product.actions';
 import { fetchCategories } from '@/actions/category.actions';
 import { ProductForm } from '@/components/dashboard/products/ProductForm';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export const metadata = {
   title: 'Edit Product | Devireen CMS',
 };
 
 async function getProductById(id: string) {
-  const supabase = await createClient();
-  const { data } = await supabase.from('products').select('*').eq('id', id).single();
+  const supabase = await createAdminClient();
+  const { data } = await supabase
+    .from('products')
+    .select('*, product_images(*)')
+    .eq('id', id)
+    .single();
   return data;
 }
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const product = await getProductById(params.id);
-  
+export default async function EditProductPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const product = await getProductById(id);
+
   if (!product) {
     notFound();
   }
@@ -32,7 +40,11 @@ export default async function EditProductPage({ params }: { params: { id: string
         <p className="text-gray-500">Update {product.name}</p>
       </div>
 
-      <ProductForm initialData={product} categories={categories || []} brands={brands || []} />
+      <ProductForm
+        initialData={product}
+        categories={categories || []}
+        brands={brands || []}
+      />
     </div>
   );
 }

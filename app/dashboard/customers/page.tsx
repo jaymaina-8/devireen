@@ -1,34 +1,49 @@
 import { createClient } from '@/lib/supabase/server';
-import { DataTable } from '@/components/ui/DataTable';
-import { columns } from '@/components/dashboard/customers/columns';
+import { CustomersClientView } from '@/components/dashboard/customers/CustomersClientView';
+import { Users, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 
 export const metadata = {
-  title: 'Customers | Devireen Enterprise',
+  title: 'Customer Directory & CRM | Devireen Enterprise OS',
 };
 
 async function getCustomers() {
   const supabase = await createClient();
-  const { data, count } = await supabase
+  const { data } = await supabase
     .from('customers')
-    .select('*', { count: 'exact' })
+    .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
-  return { data: data || [], count: count || 0 };
+  return data || [];
 }
 
 export default async function CustomersPage() {
-  const { data: customers } = await getCustomers();
+  const customers = await getCustomers();
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-gray-500">View customer information and quote history.</p>
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">
+            <Users className="h-6 w-6 text-purple-600" /> B2B Customer Directory
+            (CRM)
+          </h1>
+          <p className="mt-1 text-xs text-slate-500">
+            Manage corporate clients, KRA tax profiles, quote histories, and
+            contact points.
+          </p>
         </div>
+
+        <Link href="/dashboard/customers/new">
+          <Button className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-500">
+            <Plus className="mr-1.5 h-4 w-4" /> Add Customer
+          </Button>
+        </Link>
       </div>
 
-      <DataTable columns={columns} data={customers} searchKey="company_name" searchPlaceholder="Search customers by company name..." />
+      <CustomersClientView initialCustomers={customers} />
     </div>
   );
 }

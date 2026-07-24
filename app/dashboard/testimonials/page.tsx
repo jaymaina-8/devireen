@@ -1,20 +1,31 @@
+import { fetchTestimonialsForAdmin } from '@/actions/testimonial.actions';
+import { TestimonialClientView } from '@/components/dashboard/testimonials/TestimonialClientView';
+import { Star } from 'lucide-react';
+
 export const metadata = {
-  title: 'Testimonials | Devireen Enterprise',
+  title: 'Testimonials Management | Devireen Enterprise OS',
 };
 
-export default function TestimonialsPage() {
+export default async function TestimonialsPage() {
+  const result = await fetchTestimonialsForAdmin();
+  const testimonials = result.success ? result.data : [];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Testimonials</h1>
-          <p className="text-gray-500">Manage customer reviews and feedback.</p>
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">
+            <Star className="h-6 w-6 fill-amber-400 text-amber-500" />{' '}
+            Testimonials & Customer Reviews
+          </h1>
+          <p className="mt-1 text-xs text-slate-500">
+            Manage B2B reviews, ratings, homepage features, and live customer
+            feedback.
+          </p>
         </div>
       </div>
-      <div className="bg-white p-12 rounded-xl border border-gray-200 text-center shadow-sm">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Testimonials Module</h3>
-        <p className="text-gray-500">This module is scheduled for a future update. You will be able to collect and manage customer reviews here.</p>
-      </div>
+
+      <TestimonialClientView initialTestimonials={testimonials} />
     </div>
   );
 }

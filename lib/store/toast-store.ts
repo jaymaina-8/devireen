@@ -5,26 +5,36 @@ export interface ToastData {
   title: string;
   description?: string;
   variant?: 'default' | 'destructive' | 'success';
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  duration?: number;
 }
 
 interface ToastState {
   toasts: ToastData[];
-  addToast: (toast: Omit<ToastData, 'id'>) => void;
+  addToast: (toast: Omit<ToastData, 'id'>) => string;
   removeToast: (id: string) => void;
 }
 
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  addToast: (toast) => {
+  addToast: (toastData) => {
     const id = Math.random().toString(36).substring(2, 9);
-    set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+    const duration = toastData.duration || 5000;
+    set((state) => ({ toasts: [...state.toasts, { ...toastData, id }] }));
+
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, 5000);
+    }, duration);
+
+    return id;
   },
-  removeToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+  removeToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 }));
 
 export const toast = (props: Omit<ToastData, 'id'>) => {
-  useToastStore.getState().addToast(props);
+  return useToastStore.getState().addToast(props);
 };

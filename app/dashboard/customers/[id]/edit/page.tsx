@@ -20,19 +20,24 @@ async function getCustomer(id: string) {
   return customer;
 }
 
-export default async function EditCustomerPage({ params }: { params: { id: string } }) {
-  const customer = await getCustomer(params.id);
-  
+export default async function EditCustomerPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const customer = await getCustomer(id);
+
   if (!customer) {
     notFound();
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="max-w-2xl space-y-6">
+      <div className="mb-6 flex items-center gap-4">
         <Link href={`/dashboard/customers/${customer.id}`}>
           <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>

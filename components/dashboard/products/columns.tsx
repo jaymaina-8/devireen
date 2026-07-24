@@ -2,29 +2,66 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/Badge';
-import { Star } from 'lucide-react';
+import { Star, Check } from 'lucide-react';
 import { ProductTableRowActions } from './ProductTableRowActions';
 import { DataTableColumnHeader } from '@/components/ui/DataTable';
 
 export const columns: ColumnDef<any>[] = [
   {
+    id: 'select',
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={(e) => row.toggleSelected(!!e.target.checked)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
     accessorKey: 'name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Product" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Product" />
+    ),
     cell: ({ row }) => {
       const product = row.original;
-      const primaryImage = product.product_images?.find((img: any) => img.is_primary) || product.product_images?.[0];
+      const primaryImage =
+        product.product_images?.find((img: any) => img.is_primary) ||
+        product.product_images?.[0];
       return (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-200">
+        <div className="flex items-center gap-3 py-0.5">
+          <div className="group relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-100 shadow-2xs">
             {primaryImage ? (
-              <img src={primaryImage.url} alt={product.name} className="w-full h-full object-cover" />
+              <img
+                src={primaryImage.url}
+                alt={product.name}
+                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+              />
             ) : (
-              <span className="text-xs text-gray-400">Img</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                No Img
+              </span>
             )}
           </div>
-          <div>
-            <div className="font-medium text-gray-900 truncate max-w-[200px]">{product.name}</div>
-            <div className="text-xs text-gray-500">SKU: {product.sku}</div>
+          <div className="min-w-0">
+            <div className="max-w-[240px] truncate text-xs font-semibold text-slate-900 sm:text-sm">
+              {product.name}
+            </div>
+            <div className="font-mono text-[11px] text-slate-500">
+              SKU: {product.sku || 'N/A'}
+            </div>
           </div>
         </div>
       );
@@ -32,22 +69,34 @@ export const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'category',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Category" />
+    ),
     cell: ({ row }) => {
       const product = row.original;
-      return product.categories?.name || <span className="text-gray-400 italic">None</span>;
+      return (
+        <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+          {product.categories?.name || 'Uncategorized'}
+        </span>
+      );
     },
   },
   {
     accessorKey: 'price',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Price" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Price" />
+    ),
     cell: ({ row }) => {
       const product = row.original;
       return (
         <div>
-          <div className="font-medium text-gray-900">KSh {product.price?.toLocaleString()}</div>
+          <div className="text-xs font-bold text-slate-900 sm:text-sm">
+            KSh {product.price?.toLocaleString()}
+          </div>
           {product.sale_price && (
-            <div className="text-xs text-red-500 line-through">KSh {product.sale_price.toLocaleString()}</div>
+            <div className="text-[11px] text-red-500 line-through">
+              KSh {product.sale_price.toLocaleString()}
+            </div>
           )}
         </div>
       );
@@ -55,20 +104,37 @@ export const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: 'Status & Badges',
     cell: ({ row }) => {
       const product = row.original;
       return (
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={product.stock_status === 'IN_STOCK' ? 'success' : product.stock_status === 'PRE_ORDER' ? 'warning' : 'error'}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge
+            variant={
+              product.stock_status === 'IN_STOCK'
+                ? 'success'
+                : product.stock_status === 'PRE_ORDER'
+                  ? 'warning'
+                  : 'error'
+            }
+            className="text-[10px]"
+          >
             {product.stock_status.replace('_', ' ')}
           </Badge>
           {!product.is_active && (
-            <Badge variant="default" className="bg-gray-200 text-gray-700 hover:bg-gray-300">Draft</Badge>
+            <Badge
+              variant="default"
+              className="bg-slate-200 text-[10px] text-slate-700"
+            >
+              Draft
+            </Badge>
           )}
           {product.is_featured && (
-            <Badge variant="default" className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">
-              <Star className="w-3 h-3 inline mr-1" />
+            <Badge
+              variant="default"
+              className="border-amber-200 bg-amber-100 text-[10px] text-amber-900"
+            >
+              <Star className="mr-1 inline h-3 w-3 fill-amber-400 text-amber-500" />
               Featured
             </Badge>
           )}
